@@ -1,0 +1,48 @@
+#VRML_SIM R2022b utf8
+# tags: static
+PROTO FloorVictim [
+    field SFVec3f    translation   0 0 0
+    field SFRotation rotation      0 1 0 0
+    field SFBool     found         FALSE
+    field SFString   name          "FloorVictim"
+    field SFString   type          "harmed"
+    field SFInt32    scoreWorth    10
+    field SFFloat    size          0.03
+]
+{
+    %{
+        colour = "0.85 0.1 0.1"
+        if fields.type.value == "harmed" then
+            colour = "0.85 0.1 0.1"
+        end
+        if fields.type.value == "unharmed" then
+            colour = "0.1 0.75 0.1"
+        end
+        if fields.type.value == "stable" then
+            colour = "0.9 0.85 0.1"
+        end
+    }%
+    Pose {
+        translation IS translation
+        rotation IS rotation
+        children [
+            Solid {
+                translation 0 0.0005 0
+                children [
+                    Shape {
+                        appearance Appearance {
+                            material Material {
+                                diffuseColor %{=colour}%
+                            }
+                        }
+                        geometry DEF FLOORVICTIMBOX Box {
+                            size %{=fields.size.value}% 0.001 %{=fields.size.value}%
+                        }
+                        isPickable  FALSE
+                    }
+                ]
+                name IS name
+            }
+        ]
+    }
+}

@@ -542,7 +542,9 @@ class Erebus(Supervisor):
         est_vic_pos = robot_message[0]
         est_vic_type = robot_message[1]
 
-        iterator: Sequence[VictimObject] = self.victim_manager.victims
+        iterator: Sequence[VictimObject] = (
+            self.victim_manager.victims + self.victim_manager.floor_victims
+        )
         name: str = 'Victim'
         correct_type_bonus: int = 10
         misidentification: bool = True
@@ -939,6 +941,7 @@ class Erebus(Supervisor):
             if self.config.automatic_camera and self._camera.wb_viewpoint_node:
                 all_hazards: Sequence[VictimObject] = (
                     self.victim_manager.victims + self.victim_manager.targets
+                    + self.victim_manager.floor_victims
                 )
                 self._camera.rotate_to_victim(self.robot_obj, all_hazards)
 

@@ -247,6 +247,29 @@ class CognitiveTarget(VictimObject):
         return CognitiveTarget.TARGET_TYPES[score_sum]
 
 
+class FloorVictim(VictimObject):
+    """FloorVictim object holding data about a floor-mounted colour-marker
+    victim (Entry Level tier) within the world
+    """
+
+    @override
+    def get_simple_type(self) -> str:
+        # Reuses the same H/U/S type space as Victim
+        if self._victim_type == Victim.HARMED:
+            return 'H'
+        elif self._victim_type == Victim.UNHARMED:
+            return 'U'
+        elif self._victim_type == Victim.STABLE:
+            return 'S'
+        else:
+            return self._victim_type
+
+    @override
+    def on_same_side(self, robot: Robot) -> bool:
+        # Floor markers have no facing, so any approach angle counts
+        return True
+
+
 class VictimManager(ErebusObject):
     """VictimManager Object for managing Targets and Victims actions within the
     simulation
@@ -264,6 +287,7 @@ class VictimManager(ErebusObject):
         
         self.victims: list[Victim] = self._get_victims()
         self.targets: list[CognitiveTarget] = self._get_targets()
+        self.floor_victims: list[FloorVictim] = self._get_floor_victims()
 
     def _get_victims(self) -> list[Victim]:
         """Gets and initialises all Victims as Victim objects from nodes in the
@@ -338,11 +362,45 @@ class VictimManager(ErebusObject):
 
         return targets
 
+    def _get_floor_victims(self) -> list[FloorVictim]:
+        """Gets and initialises all floor-mounted victim markers (Entry Level
+        tier) as FloorVictim objects, if present in the simulation world.
+
+        Unlike HUMANGROUP/TARGETGROUP, FLOORVICTIMGROUP is not guaranteed to
+        exist in every world - only Entry Level maps define it - so a
+        missing group is treated as "no floor victims" rather than an error.
+
+        Returns:
+            list[FloorVictim]: List of FloorVictim Objects
+        """
+
+        floor_victims: list[FloorVictim] = []
+
+        floor_victim_group: Node | None = self._erebus.getFromDef('FLOORVICTIMGROUP')
+        if floor_victim_group is None:
+            return floor_victims
+
+        floor_victim_nodes: Field = floor_victim_group.getField("children")
+
+        # Iterate for each floor victim
+        for i in range(floor_victim_nodes.getCount()):
+            floor_victim_node: Node = floor_victim_nodes.getMFNode(i) # type: ignore
+
+            victim_type: str = floor_victim_node.getField('type').getSFString()
+            score_worth: int = floor_victim_node.getField('scoreWorth').getSFInt32()
+
+            floor_victim: FloorVictim = FloorVictim(floor_victim_node, victim_type, score_worth)
+            floor_victims.append(floor_victim)
+
+        return floor_victims
+
     def reset_victim_textures(self) -> None:
-        """Resets all Victim and Target textures to unidentified
+        """Resets all Victim, Target and FloorVictim textures to unidentified
         """
         # Iterate for each victim
         for victim in self.victims:
             victim.identified = False
         for target in self.targets:
             target.identified = False
+        for floor_victim in self.floor_victims:
+            floor_victim.identified = False
