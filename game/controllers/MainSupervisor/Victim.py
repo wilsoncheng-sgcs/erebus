@@ -404,3 +404,18 @@ class VictimManager(ErebusObject):
             target.identified = False
         for floor_victim in self.floor_victims:
             floor_victim.identified = False
+
+        # Floor victims render their "found" state on their own worldTile's
+        # floor texture (see MainSupervisor.load_floor_victim_textures()),
+        # not on the invisible FloorVictim node above - reset every tile
+        # with a victim marker directly rather than position-matching each
+        # FloorVictim back to its tile (this manager has no TileManager
+        # reference to do that lookup with).
+        walltiles: Node | None = self._erebus.getFromDef('WALLTILES')
+        if walltiles is not None:
+            tiles: Field = walltiles.getField('children')
+            for i in range(tiles.getCount()):
+                tile: Node = tiles.getMFNode(i)  # type: ignore
+                victim_found_field: Field | None = tile.getField('victimFound')
+                if victim_found_field is not None:
+                    victim_found_field.setSFBool(False)

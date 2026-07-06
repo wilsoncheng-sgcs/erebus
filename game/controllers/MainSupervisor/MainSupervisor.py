@@ -309,6 +309,20 @@ class Erebus(Supervisor):
             texture_name = f"tile{i}_{victim_type}"
             path = os.path.join(textures_path, texture_name + ".png")
             cv2.imwrite(path, img)
+
+            # "Found" variant: greys out just the marker square (not the
+            # surrounding floor), mirroring wall-mounted Victim's found
+            # texture (a solid colour desaturated to a single grey shade -
+            # see victim_harmed_found.png) via the standard luminance
+            # formula, so any marker colour degrades to a sensible grey.
+            b, g, r = fg[0], fg[1], fg[2]
+            grey = int(0.299 * r + 0.587 * g + 0.114 * b)
+            fg_found = (grey, grey, grey, 255)
+            img_found = img.copy()
+            cv2.rectangle(img_found, top_left, bottom_right, fg_found, -1)
+            path_found = os.path.join(textures_path, texture_name + "_found.png")
+            cv2.imwrite(path_found, img_found)
+
             tile.getField("victimTexture").setSFString(texture_name)
 
     def wwiReceiveText(self) -> Optional[str]:
@@ -698,6 +712,25 @@ class Erebus(Supervisor):
 
             self.robot_obj.victim_identified = True
             nearby_issue.identified = True
+
+            # Floor victims (Entry Level) have no geometry of their own -
+            # the visible colour marker is rendered on the corresponding
+            # worldTile's floor (see load_floor_victim_textures()). Setting
+            # that tile's victimFound field live regenerates its texture to
+            # the greyed-out "found" variant, mirroring wall-mounted
+            # Victim's found/not_found texture swap. `grid` (the same
+            # WALLTILES index already computed above for the room
+            # multiplier) is guaranteed to be this victim's own tile, since
+            # floor victims are always placed at a tile centre.
+            if isinstance(nearby_issue, FloorVictim):
+                tile_node = (
+                    self.getFromDef("WALLTILES")
+                    .getField("children")
+                    .getMFNode(grid)  # type: ignore
+                )
+                victim_found_field = tile_node.getField("victimFound")
+                if victim_found_field is not None:
+                    victim_found_field.setSFBool(True)
 
         if misidentification:
             self.robot_obj.increase_score(f"Misidentification of {name}",

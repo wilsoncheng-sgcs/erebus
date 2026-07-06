@@ -34,7 +34,8 @@ PROTO worldTile [
 	  field SFInt32 curveDir 0
 	  field SFInt32 room 0
 	  field SFString victimType "" # "" | "harmed" | "unharmed" | "stable" - Entry Level floor-victim colour marker, rendered inset on this tile's own floor surface (see victimTexture)
-	  field SFString victimTexture "" # resolved texture filename (without extension), set by MainSupervisor.load_floor_victim_textures() at runtime from victimType + this tile's own tileColor - not meant to be set directly by map authors
+	  field SFString victimTexture "" # resolved texture filename base (without extension or _found suffix), set by MainSupervisor.load_floor_victim_textures() at runtime from victimType + this tile's own tileColor - not meant to be set directly by map authors
+	  field SFBool victimFound FALSE # set live by MainSupervisor._detect_victim() when the floor victim on this tile is identified, mirroring Victim.proto's `found` field - swaps to the greyed-out "<victimTexture>_found.png" variant
 ]
 {
       DEF TILE Solid {
@@ -116,8 +117,23 @@ PROTO worldTile [
 										material Material {
 											diffuseColor 1 1 1
 										}
+										%{
+											-- Mirrors Victim.proto's found/not_found texture swap:
+											-- MainSupervisor.load_floor_victim_textures() pre-generates
+											-- both "<victimTexture>.png" and "<victimTexture>_found.png"
+											-- (the latter with the marker greyed out). victimFound is
+											-- set live by MainSupervisor._detect_victim() when this
+											-- tile's floor victim is identified - since worldTile is a
+											-- template PROTO, Webots regenerates this Shape when that
+											-- field changes, swapping the texture without any extra
+											-- Python-side field manipulation needed here.
+											victimFilename = fields.victimTexture.value
+											if fields.victimFound.value then
+												victimFilename = victimFilename .. "_found"
+											end
+										}%
 										texture DEF floorvictimtexture ImageTexture {
-											url [ "./textures/floor_victims/%{=fields.victimTexture.value}%.png" ]
+											url [ "./textures/floor_victims/%{=victimFilename}%.png" ]
 											repeatS FALSE
 											repeatT FALSE
 											filtering 0
