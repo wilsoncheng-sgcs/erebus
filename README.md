@@ -7,6 +7,15 @@ Erebus is under constant development and will continue to serve as the basis for
 
 <div align="center"><img src="/docs/images/environment_v23_0_0.png" width=80%></div>
 
+## About this fork
+
+This is a fork of upstream [robocup-junior/erebus](https://github.com/robocup-junior/erebus), maintained by RCJA for a local **Entry Level** competition tier (name TBD) aimed at first-time teams. The `entry-level-floor-victims` branch adds `FloorVictim.proto` plus matching detection/scoring changes so victims can be represented as simple floor-mounted colour markers (red/green/yellow = harmed/unharmed/stable) instead of wall-mounted signs, removing the orientation/facing check beginners tend to find hardest. Existing maps and the Original/Intermediate rulesets are unaffected — the change is purely additive.
+
+- Full design rationale: [`docs/entry-level-plan.md`](docs/entry-level-plan.md)
+- Companion map editor (with an Entry Level ruleset tier for exporting compatible maps): [erebus-map-editor-RCJA](https://github.com/wilsoncheng-sgcs/erebus-map-editor-RCJA) ([live app](https://wilsoncheng-sgcs.github.io/erebus-map-editor-RCJA/))
+
+This fork is a regional customization, not a proposed upstream change — see the design doc above for the reasoning. All credit for the underlying platform goes to the upstream RoboCupJunior Rescue Simulation project linked above.
+
 ## Quick Start
 
 1. Download and install [Python 3.9+](https://www.python.org/). Don't forget to add a path to the "Python".
