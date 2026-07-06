@@ -33,6 +33,8 @@ PROTO worldTile [
 	  field SFBool isHalf FALSE
 	  field SFInt32 curveDir 0
 	  field SFInt32 room 0
+	  field SFString victimType "" # "" | "harmed" | "unharmed" | "stable" - Entry Level floor-victim colour marker, rendered inset on this tile's own floor surface (see victimTexture)
+	  field SFString victimTexture "" # resolved texture filename (without extension), set by MainSupervisor.load_floor_victim_textures() at runtime from victimType + this tile's own tileColor - not meant to be set directly by map authors
 ]
 {
       DEF TILE Solid {
@@ -96,9 +98,18 @@ PROTO worldTile [
 							children [
 								Shape {
 									appearance Appearance {
+										%{ if fields.victimType.value ~= "" then }%
+										texture DEF floorvictimtexture ImageTexture {
+											url [ "./textures/floor_victims/%{=fields.victimTexture.value}%.png" ]
+											repeatS FALSE
+											repeatT FALSE
+											filtering 0
+										}
+										%{ else }%
 										material Material {
 											diffuseColor IS tileColor
 										}
+										%{ end }%
 									}
 									geometry DEF FLOORBOX Box {
 										size %{=x_size * scaleX}% %{=tileThickness * scaleY}% %{=z_size * scaleZ}%

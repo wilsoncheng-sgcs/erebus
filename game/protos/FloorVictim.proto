@@ -10,52 +10,32 @@ PROTO FloorVictim [
     field SFFloat    size          0.05
 ]
 {
-    %{
-        colour = "0.85 0.1 0.1"
-        if fields.type.value == "harmed" then
-            colour = "0.85 0.1 0.1"
-        end
-        if fields.type.value == "unharmed" then
-            colour = "0.1 0.75 0.1"
-        end
-        if fields.type.value == "stable" then
-            colour = "0.9 0.85 0.1"
-        end
-    }%
+    # Purely a logical/scoring marker - holds position, type, scoreWorth and
+    # found state for the supervisor's detection code (see Victim.py's
+    # FloorVictim class), with no visible geometry of its own.
+    #
+    # An earlier version rendered a small coloured box here directly, but
+    # any nonzero height/offset needed to avoid it being hidden by the
+    # opaque tile floor also moved it measurably closer to a robot's
+    # downward colour sensor (mounted on the underside of the robot), which
+    # for some valid low-mounted sensor builds pushed the marker inside the
+    # camera's near-clipping distance and caused missed detections - even
+    # though the floor's own colour, at its own established depth, was
+    # detected fine. Rather than tune a protrusion small enough to dodge
+    # z-fighting but large enough to avoid the clip plane (a moving target
+    # across different robot builds), the visible colour patch is instead
+    # rendered as part of worldTile's own floor surface (see
+    # worldTile.proto's victimType/victimTexture fields) - the exact same
+    # depth the floor is already proven to render reliably at, for any
+    # sensor that can see the floor at all.
+    #
+    # The `size` field is kept for interface/API stability (map editors may
+    # still populate it) but is unused now that there's no geometry to size.
     Pose {
         translation IS translation
         rotation IS rotation
         children [
             Solid {
-                # Sits clearly ABOVE the floor's top surface (the passed-in
-                # translation) with a deliberate 1mm air gap, rather than
-                # flush/recessed into it. An earlier version centered this
-                # box on the floor surface (half recessed) to minimise
-                # visual protrusion, on the theory that it might physically
-                # hinder robot movement - but this Shape has no
-                # boundingObject, so it was never a real physics collider,
-                # and the razor-thin (0.5mm) result put it right at the
-                # edge of low-mounted colour sensors' near-clipping plane,
-                # causing missed detections on some valid robot builds
-                # (confirmed empirically: a sensor mounted close to the
-                # floor failed to detect it, and detected reliably once
-                # given more clearance). Prioritise reliable detection
-                # across any reasonable sensor mounting height over a
-                # marginal cosmetic reduction in protrusion.
-                translation 0 0.002 0
-                children [
-                    Shape {
-                        appearance Appearance {
-                            material Material {
-                                diffuseColor %{=colour}%
-                            }
-                        }
-                        geometry DEF FLOORVICTIMBOX Box {
-                            size %{=fields.size.value}% 0.002 %{=fields.size.value}%
-                        }
-                        isPickable  FALSE
-                    }
-                ]
                 name IS name
             }
         ]

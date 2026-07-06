@@ -120,6 +120,11 @@ class Erebus(Supervisor):
 
         # Load targets (we need to do this BEFORE initializing victim manager)
         self.load_cognitive_targets()
+        # Generate composite floor+victim-marker textures for any Entry
+        # Level tiles with a victimType set (independent of victim_manager -
+        # this only affects what's rendered on the tile's own floor, not
+        # the separate invisible FloorVictim scoring markers)
+        self.load_floor_victim_textures()
 
         # Init tile and victim managers
         self.tile_manager: TileManager = TileManager(self)
@@ -247,6 +252,64 @@ class Erebus(Supervisor):
             type = target.getField("type").getSFString()
             if type == "blank": continue
             target.getField("texture").setSFString("targets/" + type)
+
+    def load_floor_victim_textures(self):
+        """Generates a composite floor+victim-marker texture for every
+        worldTile with a `victimType` set (Entry Level tier), and points
+        that tile's own floor texture at it - the colour marker is rendered
+        as an inset on the tile's own floor surface, at the exact depth
+        Webots already renders reliably, rather than as a separate object
+        at a different depth that a low-mounted colour sensor could clip.
+        """
+        tiles = self.getFromDef('WALLTILES').getField("children")
+
+        textures_path = get_file_path("protos/textures/floor_victims", "../../protos/textures/floor_victims")
+        if not os.path.exists(textures_path):
+            os.mkdir(textures_path)
+        files = os.listdir(textures_path)
+
+        for file in files:
+            try:
+                os.remove(os.path.join(textures_path, file))
+            except:
+                pass
+
+        # BGR (cv2 convention) equivalents of FloorVictim's original colour
+        # choices: harmed=red, unharmed=green, stable=yellow.
+        colors = {
+            "harmed": (25, 25, 217),
+            "unharmed": (25, 191, 25),
+            "stable": (25, 217, 229),
+        }
+
+        for i in range(tiles.getCount()):
+            tile = tiles.getMFNode(i)
+            victim_type_field = tile.getField("victimType")
+            if victim_type_field is None:
+                continue
+            victim_type = victim_type_field.getSFString()
+            if victim_type not in colors:
+                continue
+
+            tile_colour = tile.getField("tileColor").getSFColor()
+            bg = (int(tile_colour[2] * 255), int(tile_colour[1] * 255),
+                  int(tile_colour[0] * 255), 255)
+            fg = colors[victim_type] + (255,)
+
+            size = 512
+            img = np.full((size, size, 4), bg, dtype=np.uint8)
+            # RCJA's 50mm marker on a 300mm tile is a fixed 1/6 ratio,
+            # independent of the map's actual tile scale (the numerator and
+            # denominator both scale by the same factor, so it cancels out)
+            marker_px = size // 6
+            top_left = ((size - marker_px) // 2, (size - marker_px) // 2)
+            bottom_right = (top_left[0] + marker_px, top_left[1] + marker_px)
+            cv2.rectangle(img, top_left, bottom_right, fg, -1)
+
+            texture_name = f"tile{i}_{victim_type}"
+            path = os.path.join(textures_path, texture_name + ".png")
+            cv2.imwrite(path, img)
+            tile.getField("victimTexture").setSFString(texture_name)
 
     def wwiReceiveText(self) -> Optional[str]:
         """
