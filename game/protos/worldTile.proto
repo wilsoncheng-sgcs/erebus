@@ -99,6 +99,21 @@ PROTO worldTile [
 								Shape {
 									appearance Appearance {
 										%{ if fields.victimType.value ~= "" then }%
+										# Explicit white Material alongside the texture: an
+										# Appearance with only a `texture` and no `material`
+										# falls back to Webots' default Material, whose
+										# shading/lighting response (ambientIntensity,
+										# shininess, specularColor) differs from the plain
+										# Material{diffuseColor} used below, causing this
+										# tile's texture-rendered background to visibly not
+										# match its diffuse-coloured neighbours even with
+										# identical RGB values baked into the texture pixels.
+										material Material {
+											diffuseColor 1 1 1
+											ambientIntensity 1
+											specularColor 0 0 0
+											shininess 0
+										}
 										texture DEF floorvictimtexture ImageTexture {
 											url [ "./textures/floor_victims/%{=fields.victimTexture.value}%.png" ]
 											repeatS FALSE
