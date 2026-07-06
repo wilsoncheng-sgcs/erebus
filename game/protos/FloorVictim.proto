@@ -27,13 +27,22 @@ PROTO FloorVictim [
         rotation IS rotation
         children [
             Solid {
-                # Centered on the passed-in translation (the tile's floor
-                # top surface, set by the exporter) rather than resting on
-                # top of it - half the box is recessed into the floor
-                # volume, half pokes up, halving the visible protrusion
-                # versus sitting flush on top while staying clear of the
-                # opaque floor box so it isn't hidden.
-                translation 0 0 0
+                # Sits clearly ABOVE the floor's top surface (the passed-in
+                # translation) with a deliberate 1mm air gap, rather than
+                # flush/recessed into it. An earlier version centered this
+                # box on the floor surface (half recessed) to minimise
+                # visual protrusion, on the theory that it might physically
+                # hinder robot movement - but this Shape has no
+                # boundingObject, so it was never a real physics collider,
+                # and the razor-thin (0.5mm) result put it right at the
+                # edge of low-mounted colour sensors' near-clipping plane,
+                # causing missed detections on some valid robot builds
+                # (confirmed empirically: a sensor mounted close to the
+                # floor failed to detect it, and detected reliably once
+                # given more clearance). Prioritise reliable detection
+                # across any reasonable sensor mounting height over a
+                # marginal cosmetic reduction in protrusion.
+                translation 0 0.002 0
                 children [
                     Shape {
                         appearance Appearance {
@@ -42,7 +51,7 @@ PROTO FloorVictim [
                             }
                         }
                         geometry DEF FLOORVICTIMBOX Box {
-                            size %{=fields.size.value}% 0.001 %{=fields.size.value}%
+                            size %{=fields.size.value}% 0.002 %{=fields.size.value}%
                         }
                         isPickable  FALSE
                     }
