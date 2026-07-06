@@ -7,7 +7,7 @@ PROTO FloorVictim [
     field SFString   name          "FloorVictim"
     field SFString   type          "harmed"
     field SFInt32    scoreWorth    10
-    field SFFloat    size          0.03
+    field SFFloat    size          0.05
 ]
 {
     %{
@@ -27,7 +27,13 @@ PROTO FloorVictim [
         rotation IS rotation
         children [
             Solid {
-                translation 0 0.0005 0
+                # Centered on the passed-in translation (the tile's floor
+                # top surface, set by the exporter) rather than resting on
+                # top of it - half the box is recessed into the floor
+                # volume, half pokes up, halving the visible protrusion
+                # versus sitting flush on top while staying clear of the
+                # opaque floor box so it isn't hidden.
+                translation 0 0 0
                 children [
                     Shape {
                         appearance Appearance {
